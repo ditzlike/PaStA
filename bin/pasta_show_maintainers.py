@@ -19,7 +19,7 @@ from multiprocessing import Pool, cpu_count
 
 sys.path.insert(0,os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
 
-from pypasta.LinuxMaintainers import LinuxMaintainers
+from pypasta.LinuxMaintainers import load_maintainer
 from pypasta.Util import file_to_string
 
 log = getLogger(__name__[-15:])
@@ -213,23 +213,23 @@ def show_maintainers(config, sub, argv):
                         'a version name for a Linux repo')
 
     args = parser.parse_args()
+    repo = config.repo
 
+    kernel_revision = 'HEAD'
     if args.filter:
         filter_by_files = file_to_string(args.filter).splitlines()
+        # The first line of the file must contain a valid kernel version,
+        # tag or commit hash
+        kernel_revision = filter_by_files.pop(0)
 
-    d_repo = config.repo_location
-    repo = config.repo.repo
+    # arguments may override the kernel revision, if it is not already set
+    if args.revision:
+        kernel_revision = args.revision
+    log.info('Working on kernel revision %s' % kernel_revision)
 
-    if  args.revision != None:
-        version = args.revision
-    elif args.filter:
-        version = '.'.join(args.filter.split('.')[1:3])
-    else:
-        version = ''
-    tree = get_tree(repo, version)
-
+    all_maintainers = load_maintainer(repo, kernel_revision)
+    tree = get_tree(repo.repo, kernel_revision)
     all_filenames = walk_commit_tree(tree)
-    all_maintainers = LinuxMaintainers(tree['MAINTAINERS'].data.decode('iso8859'))
 
     global _tmp_tree
     _tmp_tree = tree
