@@ -238,6 +238,24 @@ class LinuxMailCharacteristics:
                 return True
         return False
 
+    @staticmethod
+    def _patch_get_version_static(patch, repo):
+        # taken from load_characteristics
+        # TODO: make this a static method for both to use to prevent duplicate code?
+        _mainline_tags = list(filter(lambda x: MAINLINE_REGEX.match(x[0]),
+                                     repo.tags))
+        tag = None
+
+        for cand_tag, cand_tag_date in _mainline_tags:
+            if cand_tag_date > patch.author.date:
+                break
+            tag = cand_tag
+
+        if tag is None:
+            raise RuntimeError('No valid tag found for patch %s' % patch.message_id)
+
+        return tag
+
     def _patch_get_version(self):
         tag = None
 
