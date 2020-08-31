@@ -23,6 +23,7 @@ from subprocess import call
 from tqdm import tqdm
 
 from pypasta import *
+from pypasta.Linux import load_characteristics_and_maintainers
 
 from pypasta.MailCharacteristics import MailCharacteristics, PatchType
 
