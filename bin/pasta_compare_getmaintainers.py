@@ -71,14 +71,7 @@ def compare_getmaintainers(config, argv):
     repo = config.repo
     _, clustering = config.load_cluster()
 
-    if victims:
-        tmp = defaultdict(set)
-        for victim in victims:
-            version = repo.linux_patch_get_version(repo[victim])
-            tmp[version].add(victim)
-        victims = tmp
-        maintainers_version = load_maintainers(config, victims.keys())
-    else:
+    if not victims:
         config.load_ccache_mbox()
         characteristics, maintainers_version = load_characteristics_and_maintainers(config, clustering)
         all_message_ids = get_relevant_patches(characteristics)
@@ -86,6 +79,14 @@ def compare_getmaintainers(config, argv):
             victims = random.sample(all_message_ids, bulk)
         else:
             victims = [random.choice(all_message_ids)]
+    tmp = defaultdict(set)
+    for victim in victims:
+        version = repo.linux_patch_get_version(repo[victim])
+        tmp[version].add(victim)
+    victims = tmp
+
+    if not maintainers_version:
+        maintainers_version = load_maintainers(config, victims.keys())
 
     # create temporary directory infrastructure
     d_tmp = tempfile.mkdtemp()
