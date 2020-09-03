@@ -142,14 +142,14 @@ def compare_getmaintainers(config, argv):
                     continue
 
                 patch = repo[message_id]
-                subsystems = linux_maintainers.get_sections_by_files(patch.diff.affected)
+                sections = linux_maintainers.get_sections_by_files(patch.diff.affected)
 
                 pasta_people = set()
                 pasta_lists = set()
-                for subsystem in subsystems:
-                    lists, maintainers, reviewers = linux_maintainers.get_maintainers(subsystem)
-                    subsystem_obj = linux_maintainers[subsystem]
-                    subsystem_states = subsystem_obj.status
+                for section in sections:
+                    lists, maintainers, reviewers = linux_maintainers.get_maintainers(section)
+                    section_obj = linux_maintainers[section]
+                    section_states = section_obj.status
 
                     pasta_lists |= lists
 
@@ -165,47 +165,47 @@ def compare_getmaintainers(config, argv):
                         if mtr_mail == '' or mtr_mail == 'torvalds@linux-foundation.org':
                             continue
 
-                        if len(subsystem_states) != 1:
+                        if len(section_states) != 1:
                             log.error(
-                                'maintainer for subsystem %s had more than one status or none? '
-                                'Lookup message_id %s' % (subsystem, message_id))
-                        elif subsystem_states[0] is Section.Status.Maintained:
+                                'maintainer for section %s had more than one status or none? '
+                                'Lookup message_id %s' % (section, message_id))
+                        elif section_states[0] is Section.Status.Maintained:
                             status = 'maintainer'
-                        elif subsystem_states[0] is Section.Status.Supported:
+                        elif section_states[0] is Section.Status.Supported:
                             status = 'supporter'
-                        elif subsystem_states[0] is Section.Status.OddFixes:
+                        elif section_states[0] is Section.Status.OddFixes:
                             status = 'odd fixer'
                         else:
-                            status = str(subsystem_states[0])
+                            status = str(section_states[0])
                         pasta_people.add((maintainer[1].lower(), status))
 
                 log.info('maintainers successfully retrieved by PaStA')
 
                 pl_split = pl_output.split('\n')
                 pl_people = pl_split[0].split(';')
-                pl_subsystems = set(pl_split[2].split(';'))
+                pl_sections = set(pl_split[2].split(';'))
 
                 # pl_people will contain lists. Filter them.
                 pl_lists = {list.split(' ')[0] for list in pl_people if ' list' in list}
                 pl_people = {person for person in pl_people if ' list' not in person}
 
-                # First, check if subsystems actually match. Unfortunately,
-                # get_maintainers crops subsystem names. Hence, only compare
+                # First, check if sections actually match. Unfortunately,
+                # get_maintainers crops section names. Hence, only compare
                 # 40 characters of the name
-                pasta_subsystems_abbrev = {subsystem[0:40] for subsystem in subsystems}
-                pl_subsystems_abbrev = {subsystem[0:40] for subsystem in pl_subsystems}
+                pasta_sections_abbrev = {section[0:40] for section in sections}
+                pl_sections_abbrev = {section[0:40] for section in pl_sections}
 
                 isAccepted = True
 
-                missing_subsys_pasta = pl_subsystems_abbrev - pasta_subsystems_abbrev
-                missing_subsys_pl = pasta_subsystems_abbrev - pl_subsystems_abbrev
+                missing_subsys_pasta = pl_sections_abbrev - pasta_sections_abbrev
+                missing_subsys_pl = pasta_sections_abbrev - pl_sections_abbrev
                 if len(missing_subsys_pasta):
                     isAccepted = False
                     log.warning('Subsystems: Missing in PaStA: %s' % missing_subsys_pasta)
                 if len(missing_subsys_pl):
                     isAccepted = False
                     log.warning('Subsystems: Missing in get_maintainers: %s' % missing_subsys_pl)
-                if pasta_subsystems_abbrev == pl_subsystems_abbrev:
+                if pasta_sections_abbrev == pl_sections_abbrev:
                     log.info('Subsystems: Match')
 
                 # Second, check if list entries match
@@ -221,7 +221,7 @@ def compare_getmaintainers(config, argv):
                     log.info('Lists: Match')
 
                 # Third, check if maintainers / reviewers / supports match. We now don't care
-                # about the subsystem any longer, but we do care about the state of the person
+                # about the section any longer, but we do care about the state of the person
                 pl_person_regex = re.compile('.*<(.*)> \(([^:]*)(?::(.*))?\)')
                 pl_system_regex = re.compile('(.*) \((.*):(.*)\)')
                 match = True
