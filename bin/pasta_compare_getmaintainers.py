@@ -70,6 +70,7 @@ def compare_getmaintainers(config, argv):
 
     repo = config.repo
     _, clustering = config.load_cluster()
+    maintainers_version = None
 
     if not victims:
         config.load_ccache_mbox()
