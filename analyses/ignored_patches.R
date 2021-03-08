@@ -20,6 +20,7 @@ load_characteristics <- function(filename) {
   data <- read_csv(filename)
   data$list.matches_patch <- as.logical(data$list.matches_patch)
   data$ignored <- as.logical(data$ignored)
+  data$committer.correct <- as.logical(data$committer.correct)
   data <- data %>% mutate(date = as.Date(time))
 
   # Add week info
@@ -195,6 +196,57 @@ composition <- function(data, plot_name) {
     theme(axis.text.x.top = element_text(angle = 45, hjust = 0))
   filename = file.path('composition', plot_name)
   printplot(plot, filename)
+}
+
+patch_conform_analysis <- function(data){
+  # Filter for relevant patches written by humans (i.e., no bots, no stable-review, ...)
+  commit_data <- data %>%
+    filter(type == 'patch') %>% 
+    select(list, committer.correct)
+  
+  # Remove TLDs
+  commit_data$list <- sapply(strsplit(commit_data$list, '@'), '[', 1)
+  
+  total_data <- commit_data %>%
+    select(committer.correct) %>%
+    count(committer.correct, name = 'freq') %>%
+    mutate(proportion = freq / sum(freq))
+  
+  list_data <- commit_data %>%
+    group_by(list) %>%
+    count(committer.correct, name = 'freq') %>%
+    mutate(proportion = freq / sum(freq))
+  
+  high_freq_lists <- (list_data %>%
+    select(list, freq) %>%
+    group_by(list) %>%
+    summarise(sum = sum(freq)) %>%
+    slice_max(sum, n = conform.top.n))$list
+  
+  top_n_data <- (list_data %>% filter(list %in% high_freq_lists))
+
+  plot <- ggplot(top_n_data, aes(x=committer.correct, y = proportion)) +
+    geom_bar(stat = 'identity', width = 0.5) +
+    scale_x_discrete(breaks = c(FALSE, TRUE, NA),
+                     labels = c('No', 'Yes', 'N.I.')) +
+    scale_y_continuous(labels = scales::percent_format(accuracy = 1, suffix = "\\%"),
+                       limits = c(0, 1)) +
+    facet_wrap(~list, nrow=3) +
+    my.theme +
+    theme(axis.title.x=element_blank(),
+          axis.title.y=element_blank())
+  printplot(plot, "major_lists")
+
+  plot <- ggplot(total_data, aes(x=committer.correct, y = proportion)) +
+    geom_bar(stat = 'identity', width=0.5) +
+    scale_x_discrete(breaks = c(FALSE, TRUE, NA),
+                     labels = c('No', 'Yes', 'Not integrated')) +
+    scale_y_continuous(labels = scales::percent_format(accuracy = 1, suffix = "\\%")) +
+    labs(color = '') +
+    xlab('Correctly Integrated?') +
+    my.theme +
+    theme(axis.title.y = element_blank())
+  printplot(plot, "total_integration")
 }
 
 args <- commandArgs(trailingOnly = TRUE)
