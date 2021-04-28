@@ -46,6 +46,9 @@ def walk_commit_tree(tree):
         elif type(entry) == pygit2.Tree:
             results |= {os.path.join(entry.name, item)
                         for item in walk_commit_tree(entry)}
+        elif type(entry) == pygit2.Commit:
+            # continue if we find a commit. We'll find the file later
+            continue
         else:
             raise TypeError('Unknown type: %s' % type(entry))
 
