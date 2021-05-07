@@ -268,7 +268,7 @@ def load_linux_mail_characteristics(config, clustering,
         _maintainers_version = maintainers_version
         _clustering = clustering
         _repo = repo
-        p = Pool(processes=int(cpu_count()), maxtasksperchild=1)
+        p = Pool(processes=int(0.25*cpu_count()), maxtasksperchild=4)
 
         missing = p.map(_load_mail_characteristic, missing, chunksize=1000)
         missing = dict(missing)
