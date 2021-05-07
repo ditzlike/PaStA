@@ -149,4 +149,74 @@ class LinuxMailCharacteristics (MailCharacteristics):
         if self.type == PatchType.OTHER:
             self.type = PatchType.PATCH
 
-        self._integrated_correct(repo, maintainers_version)
+        if maintainers_version is None:
+            return
+
+        maintainers = maintainers_version[self.version]
+        sections = maintainers.get_sections_by_files(self.patch.diff.affected)
+        for section in sections:
+            s_lists, s_maintainers, s_reviewers = maintainers.get_maintainers(section)
+            s_maintainers = {x[1] for x in s_maintainers if x[1]}
+            s_reviewers = {x[1] for x in s_reviewers if x[1]}
+            self.maintainers[section] = s_lists, s_maintainers, s_reviewers
+
+        if not self.first_upstream:
+            return
+
+        # In case the patch was integrated, fill the fields committer and
+        # integrated_correct. integrated_correct indicates if the patch was
+        # integrated by a maintainer that is responsible for a section that is
+        # affected by the patch. IOW: The field indicates if the patch was
+        # picked by the "correct" maintainer
+        upstream = repo[self.first_upstream]
+        self.committer = upstream.committer.name.lower()
+        self.integrated_correct = False
+        for section in maintainers.get_sections_by_files(upstream.diff.affected):
+            _, s_maintainers, _ = maintainers.get_maintainers(section)
+            if self.committer in [name for name, mail in s_maintainers]:
+                self.integrated_correct = True
+                break
+
+
+def _load_mail_characteristic(message_id):
+    return message_id, LinuxMailCharacteristics(_repo, _maintainers_version,
+                                                _clustering, message_id)
+
+
+def load_linux_mail_characteristics(config, clustering,
+                                    ids):
+    repo = config.repo
+
+    tags = {repo.patch_get_version(repo[x]) for x in clustering.get_downstream()}
+    maintainers_version = load_maintainers(config, tags)
+
+    def _load_characteristics(ret):
+        if ret is None:
+            ret = dict()
+
+        missing = ids - ret.keys()
+        if len(missing) == 0:
+            return ret, False
+
+        global _repo, _maintainers_version, _clustering
+        _maintainers_version = maintainers_version
+        _clustering = clustering
+        _repo = repo
+        p = Pool(processes=int(0.25*cpu_count()), maxtasksperchild=4)
+
+        missing = p.map(_load_mail_characteristic, missing, chunksize=1000)
+        missing = dict(missing)
+        print('Done')
+        p.close()
+        p.join()
+        _repo = None
+        _maintainers_version = None
+        _clustering = None
+
+        return {**ret, **missing}, True
+
+    log.info('Loading/Updating Linux patch characteristics...')
+    characteristics = load_pkl_and_update(config.f_characteristics_pkl,
+                                          _load_characteristics)
+
+    return characteristics
