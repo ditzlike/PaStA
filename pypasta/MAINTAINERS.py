@@ -273,6 +273,7 @@ class Section:
         self.webpage = None
         self.bugs = list()
         self.chat = list()
+        self.version = list()
 
         # Required for filename matching
         self.keywords = list()
@@ -344,6 +345,8 @@ class Section:
                 self.bugs.append(value)
             elif type == 'C':
                 self.chat.append(value)
+            elif type == 'V':
+                self.version.append(value)
             else:
                 raise RuntimeError('Unknown Maintainer Entry: %s' % line)
 
