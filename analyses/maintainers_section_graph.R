@@ -54,6 +54,9 @@ g  <- igraph::graph_from_data_frame(data_frame, directed = FALSE)
 # removing this because it's trivial that the rest includes everything
 g <- igraph::delete.vertices(g, "THE REST")
 
+# in case of QEMU
+#g <- igraph::delete.vertices(g, "General Project Administration - All patches CC here")
+
 # retrieve vertex size by finding edge weight of self loop
 for (e in which(which_loop(g))) {
   assertthat::are_equal(head_of(g, E(g)[e]), tail_of(g, E(g)[e]))
