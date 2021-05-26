@@ -228,6 +228,10 @@ class LinuxMailCharacteristics (MailCharacteristics):
         if not self.first_upstream:
             return
 
+        def check_maintainer(section, committer):
+            _, s_maintainers, _ = maintainers.get_maintainers(section)
+            return committer in [name for name, mail in s_maintainers]
+
         # In case the patch was integrated, fill the fields committer and
         # integrated_correct. integrated_correct indicates if the patch was
         # integrated by a maintainer that is responsible for a section that is
@@ -236,10 +240,32 @@ class LinuxMailCharacteristics (MailCharacteristics):
         upstream = repo[self.first_upstream]
         self.committer = upstream.committer.name.lower()
         self.integrated_correct = False
-        for section in maintainers.get_sections_by_files(upstream.diff.affected):
+        sections = maintainers.get_sections_by_files(upstream.diff.affected)
+        for section in sections:
             _, s_maintainers, _ = maintainers.get_maintainers(section)
-            if self.committer in [name for name, mail in s_maintainers]:
+            if check_maintainer(section, self.committer):
                 self.integrated_correct = True
+                self.integrated_xcorrect = True
+                break
+
+        if self.integrated_xcorrect or not maintainers.cluster:
+            return
+
+        def get_cluster(section):
+            for cluster in maintainers.cluster:
+                if section in cluster:
+                    return cluster
+            raise ValueError('Unable to find a cluster for section %s (Version: %s)' % (section, self.version))
+
+        # Search for the cluster
+        for section in sections - {'THE REST'}:
+            cluster = get_cluster(section)
+            for c in cluster:
+                self.integrated_xcorrect = check_maintainer(c, self.committer)
+                if self.integrated_xcorrect:
+                    break
+
+            if self.integrated_xcorrect:
                 break
 
 
