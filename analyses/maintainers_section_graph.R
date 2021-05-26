@@ -39,6 +39,7 @@ PRINT_INFORMATION <- FALSE
 DISPLAY_LABELS <- FALSE
 
 TIKZ_DESTINATION <- file.path(d_dst, 'graph.tex')
+CLUSTER_DESTINATION <- file.path(d_dst, 'cluster_file.txt')
 
 args <- commandArgs(trailingOnly = TRUE)
 if (length(args) == 0) {
@@ -290,3 +291,21 @@ print_tikz_graph <- function(g, dst) {
 }
 
 print_tikz_graph(g, TIKZ_DESTINATION)
+
+write_cluster_file <- function(g, dst) {
+  sink(dst)
+
+  for (i in bounds) {
+    group <- comm_groups[i]
+    group_list <- unname(group)[[1]]
+
+    for (section in group_list) {
+      cat(section)
+      cat('\n')
+    }
+    cat('\n')
+  }
+  sink()
+}
+
+write_cluster_file(g, CLUSTER_DESTINATION)
