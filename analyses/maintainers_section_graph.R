@@ -38,6 +38,8 @@ PRINT_DEGREE_INFO <- FALSE
 PRINT_INFORMATION <- FALSE
 DISPLAY_LABELS <- FALSE
 
+TIKZ_DESTINATION <- file.path(d_dst, 'graph.tex')
+
 args <- commandArgs(trailingOnly = TRUE)
 if (length(args) == 0) {
   file_name <- 'resources/linux/resources/maintainers_section_graph.csv'
@@ -206,3 +208,79 @@ if (PRINT_CLUSTERS) {
                 )
   }
 }
+
+
+print_tikz_graph <- function(g, dst) {
+  sink(dst)
+
+  # generate trees
+
+  blacklist <- c()
+  for (i in bounds) {
+    group <- comm_groups[i]
+    group_list <- unname(group)[[1]]
+
+    #dplyr doesn't work that well in lambda-like functions such as which
+    my_in <- function(vertex) {
+      return(vertex %in% group_list)
+    }
+    cluster_graph <- igraph::delete_vertices(g, which(!my_in(V(g)$name)))
+    wt_clusters <- cluster_walktrap(cluster_graph)
+
+    cluster_string <- paste0("tree", toString(i), "[draw,circle] // [simple necklace layout] {")
+
+    if(length(group_list) == 1) {
+      #cluster_string <- paste0(cluster_string, '\"', group_list[1], '\"};')
+      blacklist <- c(blacklist, i)
+      next
+    } else {
+      for (e in E(cluster_graph)){
+        cluster_string <- paste0(cluster_string, '\"', head_of(cluster_graph, e)$name, '\"',
+                                 '-- \"', tail_of(cluster_graph, e)$name, '\", ')
+      }
+      cluster_string <- paste0(substr(cluster_string, 1, nchar(cluster_string)-2), '};')
+    }
+
+    cat(cluster_string)
+    cat('\n')
+  }
+
+
+  # TODO: there is probably a way better way to do this
+  mat <- matrix(0, nrow = length(bounds), ncol = length(bounds))
+
+  for (i in bounds){
+    group_i <- comm_groups[i]
+    group_list_i <- unname(group_i)[[1]]
+    for (j in bounds){
+      group_j <- comm_groups[j]
+      group_list_j <- unname(group_j)[[1]]
+      if (j == i){
+        next
+      }
+      for (v_i in group_list_i){
+        for (v_j in group_list_j) {
+          #print(g[v_i$name, v_j$name])
+          if (g[v_i, v_j] > 0) {
+            mat[i, j] = mat[i, j] + 1
+          }
+        }
+      }
+    }
+  }
+
+  # TODO: take value into account
+  # TODO: skip duplicates
+  for (i in bounds){
+    for (j in bounds){
+      if (mat[i, j] != 0) {
+        cat(paste0('tree', toString(i), '-- ', 'tree', toString(j)))
+        cat('\n')
+      }
+    }
+  }
+
+  sink()
+}
+
+print_tikz_graph(g, TIKZ_DESTINATION)
