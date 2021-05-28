@@ -214,59 +214,7 @@ class LinuxMailCharacteristics (MailCharacteristics):
         if self.type == PatchType.OTHER:
             self.type = PatchType.PATCH
 
-        if maintainers_version is None:
-            return
-
-        maintainers = maintainers_version[self.version]
-        sections = maintainers.get_sections_by_files(self.patch.diff.affected)
-        for section in sections:
-            s_lists, s_maintainers, s_reviewers = maintainers.get_maintainers(section)
-            s_maintainers = {x[1] for x in s_maintainers if x[1]}
-            s_reviewers = {x[1] for x in s_reviewers if x[1]}
-            self.maintainers[section] = s_lists, s_maintainers, s_reviewers
-
-        if not self.first_upstream:
-            return
-
-        def check_maintainer(section, committer):
-            _, s_maintainers, _ = maintainers.get_maintainers(section)
-            return committer in [name for name, mail in s_maintainers]
-
-        # In case the patch was integrated, fill the fields committer and
-        # integrated_correct. integrated_correct indicates if the patch was
-        # integrated by a maintainer that is responsible for a section that is
-        # affected by the patch. IOW: The field indicates if the patch was
-        # picked by the "correct" maintainer
-        upstream = repo[self.first_upstream]
-        self.committer = upstream.committer.name.lower()
-        self.integrated_correct = False
-        sections = maintainers.get_sections_by_files(upstream.diff.affected)
-        for section in sections:
-            _, s_maintainers, _ = maintainers.get_maintainers(section)
-            if check_maintainer(section, self.committer):
-                self.integrated_correct = True
-                self.integrated_xcorrect = True
-                break
-
-        if self.integrated_xcorrect or not maintainers.cluster:
-            return
-
-        def get_cluster(section):
-            for cluster in maintainers.cluster:
-                if section in cluster:
-                    return cluster
-            raise ValueError('Unable to find a cluster for section %s (Version: %s)' % (section, self.version))
-
-        # Search for the cluster
-        for section in sections - {'THE REST'}:
-            cluster = get_cluster(section)
-            for c in cluster:
-                self.integrated_xcorrect = check_maintainer(c, self.committer)
-                if self.integrated_xcorrect:
-                    break
-
-            if self.integrated_xcorrect:
-                break
+        self._integrated_correct(repo, maintainers_version)
 
 
 def _load_mail_characteristic(message_id):
