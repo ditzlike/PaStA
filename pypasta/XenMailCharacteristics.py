@@ -52,6 +52,15 @@ class XenMailCharacteristics(MailCharacteristics):
                   'version.sh',
     ]
 
+    # Additional lists that are not known by pasta
+    LISTS = {'osstest-admin@xenproject.org',
+             'security@xen.org',
+             'xen-api@lists.xenproject.org',
+             'xen-devel@lists.xen.org',
+             'xen-devel@lists.xensource.com',
+             'xen-users@lists.xenproject.org',
+    }
+
     def __init__(self, repo, maintainers_version, clustering, message_id):
         super().__init__(repo, clustering, message_id)
         self.__init(repo, maintainers_version)
