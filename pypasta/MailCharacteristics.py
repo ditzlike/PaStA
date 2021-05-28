@@ -252,6 +252,7 @@ class MailCharacteristics:
         self.subject = email_get_header_normalised(self.message, 'Subject')
         self.date = mail_parse_date(self.message['Date'])
 
+        # TBD CHECK THIS!
         self.lists = repo.mbox.get_lists(message_id)
 
         # stuff for maintainers analysis
