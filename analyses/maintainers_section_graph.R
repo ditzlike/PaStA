@@ -297,7 +297,7 @@ write_cluster_file <- function(g, dst) {
 
   for (i in bounds) {
     group <- comm_groups[i]
-    group_list <- unname(group)[[1]]
+    group_list <- sort(unname(group)[[1]])
 
     for (section in group_list) {
       cat(section)
