@@ -292,11 +292,13 @@ print_tikz_graph <- function(g, dst) {
 
 print_tikz_graph(g, TIKZ_DESTINATION)
 
+
 write_cluster_file <- function(g, dst) {
+  sorted_comm_groups <- comm_groups[order(sapply(comm_groups,function(x) x[[1]]))]
   sink(dst)
 
   for (i in bounds) {
-    group <- comm_groups[i]
+    group <- sorted_comm_groups[i]
     group_list <- sort(unname(group)[[1]])
 
     for (section in group_list) {
