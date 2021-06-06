@@ -35,6 +35,7 @@ linux_version_regex = re.compile(r'^v(\d+\.\d+|2\.6\.\d+)(-rc\d+)?$')
 mainline_regex = {
     'linux': linux_version_regex,
     'qemu': linux_version_regex,
+    'u-boot': re.compile(r'^v201.*$'),
     'xen': re.compile(r'^(RELEASE-)?\d+\.\d+\.0.*$'),
 }
 
