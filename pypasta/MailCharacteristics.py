@@ -365,10 +365,12 @@ def load_characteristics(config, clustering):
     patches of the clustering.
     """
     from .LinuxMailCharacteristics import LinuxMailCharacteristics
+    from .QemuMailCharacteristics import QemuMailCharacteristics
     from .XenMailCharacteristics import XenMailCharacteristics
     from .UBootMailCharacteristics import UBootMailCharacteristics
     _load_characteristics = {
         'linux': (load_maintainers_characteristics, LinuxMailCharacteristics),
+        'qemu': (load_maintainers_characteristics, QemuMailCharacteristics),
         'u-boot': (load_maintainers_characteristics, UBootMailCharacteristics),
         'xen': (load_maintainers_characteristics, XenMailCharacteristics),
     }
