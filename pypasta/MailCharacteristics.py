@@ -218,7 +218,11 @@ class MailCharacteristics:
 
         # Search for the cluster
         self.integrated_xcorrect = False
-        for section in sections - {'THE REST'}:
+        # Linux Quirk
+        narf_sections = sections - {'THE REST'}
+        # Qemu Quirk
+        narf_sections = {x for x in narf_sections if not x.startswith('General Project Administration')}
+        for section in narf_sections:
             cluster = get_cluster(section)
             for c in cluster:
                 self.integrated_xcorrect = check_maintainer(c, self.committer)
