@@ -218,6 +218,7 @@ class MailCharacteristics:
             raise ValueError('Unable to find a cluster for section %s (Version: %s)' % (section, self.version))
 
         # Search for the cluster
+        self.integrated_xcorrect = False
         for section in sections - {'THE REST'}:
             cluster = get_cluster(section)
             for c in cluster:
