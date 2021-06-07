@@ -30,11 +30,9 @@ log = getLogger(__name__[-15:])
 # We need this global variable, as pygit2 Repository objects are not pickleable
 _tmp_repo = None
 
-linux_version_regex = re.compile(r'^v(\d+\.\d+|2\.6\.\d+)(-rc\d+)?$')
-
 mainline_regex = {
-    'linux': linux_version_regex,
-    'qemu': linux_version_regex,
+    'linux': re.compile(r'^v(\d+\.\d+|2\.6\.\d+)(-rc\d+)?$'),
+    'qemu': re.compile(r'^v.*$'),
     'u-boot': re.compile(r'^v201.*$'),
     'xen': re.compile(r'^(RELEASE-)?\d+\.\d+\.0.*$'),
 }
