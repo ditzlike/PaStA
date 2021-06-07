@@ -202,7 +202,6 @@ class MailCharacteristics:
         self.integrated_correct = False
         sections = maintainers.get_sections_by_files(upstream.diff.affected)
         for section in sections:
-            _, s_maintainers, _ = maintainers.get_maintainers(section)
             if check_maintainer(section, self.committer):
                 self.integrated_correct = True
                 self.integrated_xcorrect = True
