@@ -212,7 +212,7 @@ if (PRINT_CLUSTERS) {
     wt_clusters <- cluster_walktrap(cluster_graph)
     print_graph_information(cluster_graph)
 
-    printplot(cluster_graph, toString(i),
+    printplot(cluster_graph, paste0("cluster_", toString(i)),
                 mark.groups=igraph::groups(wt_clusters),
                 mark.col = PALETTE,
                 vertex.size=VERTEX_SIZE,
