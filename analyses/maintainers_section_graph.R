@@ -24,6 +24,7 @@ PALETTE <- c('#D83359','#979CFB','#f46d43','#fdae61','#fee090','#ffffbf','#e0f3f
 
 PRINT_ENTIRE_GRAPH <- TRUE
 PRINT_CLUSTERS <- TRUE
+PRINT_RANDOM_CLUSTERS <- FALSE
 
 VERTEX_SIZE <- 0.5
 LABEL_SIZE <- 0.6
@@ -245,6 +246,45 @@ write_cluster_file <- function(g, dst) {
 }
 
 write_cluster_file(g, CLUSTER_DESTINATION)
+
+if (PRINT_RANDOM_CLUSTERS) {
+  vertex_names <- V(g)$name
+
+  for (i in bounds){
+    group <- comm_groups[i]
+    group_list <- unname(group)[[1]]
+
+    if (!is.na(MIN_CLUSTERSIZE) && length(group_list) < MIN_CLUSTERSIZE) {
+      next
+    }
+
+    if (!is.na(MAX_CLUSTERSIZE) && length(group_list) > MAX_CLUSTERSIZE) {
+      next
+    }
+
+    # get a random sample of vertex names, as much as we need for the cluster
+    name_sample <- sample(vertex_names, length(group_list), replace=FALSE)
+    # extract them from the original vertex name vector
+    vertex_names <- setdiff(vertex_names, name_sample)
+
+    cluster_graph <- igraph::delete_vertices(g, which(!my_in(V(g)$name, group_list)))
+    cluster_graph$random_name <- name_sample
+
+    wt_clusters <- cluster_walktrap(cluster_graph)
+    print_graph_information(cluster_graph)
+
+    printplot(cluster_graph, paste0("random_cluster_", toString(i)),
+                mark.groups=igraph::groups(wt_clusters),
+                mark.col = PALETTE,
+                vertex.size=VERTEX_SIZE,
+                vertex.label=cluster_graph$random_name,
+                vertex.label.family = FONT_FAMILY,
+                vertex.label.dist=0.5,
+                vertex.label.cex=LABEL_SIZE,
+                layout = layout_with_cluster_edges(cluster_graph, 0.01)
+                )
+  }
+}
 
 print_tikz_graph <- function(g, dst) {
   sink(dst)
