@@ -378,3 +378,84 @@ print_tikz_graph <- function(g, dst) {
 }
 
 print_tikz_graph(g, TIKZ_DESTINATION)
+
+print_tikz_time_cluster <- function(g, dst) {
+  sink(dst)
+
+  # TODO: there is probably a way better way to do this
+  # first calculate the edges between
+  mat <- matrix(0, nrow = length(bounds), ncol = length(bounds))
+
+  for (i in bounds){
+    group_i <- comm_groups[i]
+    group_list_i <- unname(group_i)[[1]]
+    for (j in bounds){
+      group_j <- comm_groups[j]
+      group_list_j <- unname(group_j)[[1]]
+      if (j == i){
+        next
+      }
+      for (v_i in group_list_i){
+        for (v_j in group_list_j) {
+          #print(g[v_i$name, v_j$name])
+          if (g[v_i, v_j] > 0) {
+            mat[i, j] = mat[i, j] + 1
+          }
+        }
+      }
+    }
+  }
+
+  # generate trees and skip the ones with 0 edges in the matrix
+  # keep them in mind within the trailing string
+
+  trail_string <- ""
+  for (i in bounds) {
+    group <- comm_groups[i]
+    group_list <- unname(group)[[1]]
+
+    #dplyr doesn't work that well in lambda-like functions such as which
+    my_in <- function(vertex) {
+      return(vertex %in% group_list)
+    }
+    cluster_graph <- igraph::delete_vertices(g, which(!my_in(V(g)$name)))
+    wt_clusters <- cluster_walktrap(cluster_graph)
+
+    #cluster_string <- paste0("tree", toString(i), "[draw,circle] // [simple necklace layout] {")
+    deg <- igraph::degree(cluster_graph)
+    maximum_deg <- names(sort(deg, decreasing=TRUE)[1])
+    #cluster_string <- paste0("tree", toString(i), "/\"", maximum_deg,
+    #                         "\"[draw, circle, minimum size=", length(group_list), "];")
+
+    if (all(mat[,i] == 0)) {
+      trail_string <- paste0(trail_string, "tree", toString(i), "/\"", maximum_deg,
+                    "\"[draw, circle, minimum size=", length(group_list), "];\n")
+    } else {
+      cluster_string <- paste0("tree", toString(i), "/\"", maximum_deg,
+                             "\"[draw, circle, minimum size=", length(group_list), "];")
+
+    }
+
+    cat(cluster_string)
+    cat('\n')
+  }
+  cat("%%% isolated clusters %%%\n")
+  cat(trail_string)
+
+
+  # TODO: take value into account
+  # TODO: skip duplicates
+  for (i in bounds){
+    for (j in bounds){
+      if (mat[i, j] != 0) {
+        cat(paste0('tree', toString(i), '--[line width=', mat[i, j], ']',
+                   'tree', toString(j), '% size: ', mat[i, j], ';'))
+        cat('\n')
+      }
+    }
+  }
+
+  sink()
+}
+
+print_tikz_time_cluster(g, TIKZ_DESTINATION)
