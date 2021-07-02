@@ -49,6 +49,8 @@ d_maintainers_cluster <- file.path(d_resources, 'maintainers_cluster')
 dir.create(d_maintainers_cluster, showWarnings = FALSE)
 CLUSTER_DESTINATION <- file.path(d_maintainers_cluster,
                                  gsub(".csv$", ".txt", basename(file_name)))
+TIKZ_DESTINATION <- file.path(d_resources, gsub(".tex$", ".txt",
+						basename(file_name)))
 
 data_frame <- read_csv(file_name)
 data_frame$weight <- data_frame$lines
@@ -243,3 +245,96 @@ write_cluster_file <- function(g, dst) {
 }
 
 write_cluster_file(g, CLUSTER_DESTINATION)
+
+print_tikz_graph <- function(g, dst) {
+  sink(dst)
+
+  # generate trees
+
+  blacklist <- c()
+  for (i in bounds) {
+    group <- comm_groups[i]
+    group_list <- unname(group)[[1]]
+
+    #dplyr doesn't work that well in lambda-like functions such as which
+    my_in <- function(vertex) {
+      return(vertex %in% group_list)
+    }
+    cluster_graph <- igraph::delete_vertices(g, which(!my_in(V(g)$name)))
+    wt_clusters <- cluster_walktrap(cluster_graph)
+
+    cluster_string <- paste0("tree", toString(i), "[draw,circle] // [simple necklace layout] {")
+
+    if(length(group_list) == 1) {
+      #cluster_string <- paste0(cluster_string, '\"', group_list[1], '\"};')
+      blacklist <- c(blacklist, i)
+      next
+    } else {
+      for (e in E(cluster_graph)){
+        head_node <- tolower(head_of(cluster_graph, e)$name)
+        tail_node <- tolower(tail_of(cluster_graph, e)$name)
+
+        if (nchar(head_node) > 16) {
+          split <- strsplit(head_node, " ")[[1]]
+          #middle <- floor(length(split)/2)
+          middle <- ceiling(length(split)/2)
+          head_node <- paste0(paste(split[1:middle], collapse = " "), "\\n",
+                              paste(split[(middle+1):length(split)], collapse = " "))
+        }
+
+        if (nchar(tail_node) > 16) {
+          split <- strsplit(tail_node, " ")[[1]]
+          middle <- floor(length(split)/2)
+          tail_node <- paste0(paste(split[1:middle], collapse = " "), "\\n",
+                              paste(split[(middle+1):length(split)], collapse = " "))
+        }
+
+        cluster_string <- paste0(cluster_string, '\"', head_node, '\"',
+                                 '-- \"', tail_node, '\", ')
+      }
+      cluster_string <- paste0(substr(cluster_string, 1, nchar(cluster_string)-2), '};')
+    }
+
+    cat(cluster_string)
+    cat('\n')
+  }
+
+
+  # TODO: there is probably a way better way to do this
+  mat <- matrix(0, nrow = length(bounds), ncol = length(bounds))
+
+  for (i in bounds){
+    group_i <- comm_groups[i]
+    group_list_i <- unname(group_i)[[1]]
+    for (j in bounds){
+      group_j <- comm_groups[j]
+      group_list_j <- unname(group_j)[[1]]
+      if (j == i){
+        next
+      }
+      for (v_i in group_list_i){
+        for (v_j in group_list_j) {
+          #print(g[v_i$name, v_j$name])
+          if (g[v_i, v_j] > 0) {
+            mat[i, j] = mat[i, j] + 1
+          }
+        }
+      }
+    }
+  }
+
+  # TODO: take value into account
+  # TODO: skip duplicates
+  for (i in bounds){
+    for (j in bounds){
+      if (mat[i, j] != 0) {
+        cat(paste0('tree', toString(i), '-- ', 'tree', toString(j)))
+        cat('\n')
+      }
+    }
+  }
+
+  sink()
+}
+
+print_tikz_graph(g, TIKZ_DESTINATION)
