@@ -1,0 +1,2 @@
+minsize: 10
+maxsiez:1000
